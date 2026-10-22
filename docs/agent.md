@@ -2,9 +2,9 @@
 
 > Prepared for a four-person student team from the research, local checks, and discussions in this chat.
 >
-> **As of:** 22 October 2026. **Reference timezone:** Vietnam / Asia–Bangkok, UTC+7.
+> **As of:** 22 October 2026 (Updated at 10:07 UTC+7 — see **[Section 26](#26-event-day-progress-and-updated-execution-plan-22-oct-2026-1007-utc7)** for the latest dataset audit, TF-IDF baseline, approved-model multilingual verification, 6-submission strategy, fixed 5-fold split, and Sub 1 / Sub 2 handoff specs). **Reference timezone:** Vietnam / Asia–Bangkok, UTC+7.
 >
-> **Workspace:** `D:\Coding\Prj\RMITHACK`.
+> **Workspace:** `D:\Coding\Prj\RMITHACK` (Git repository root: `D:\Coding\Prj\RMITHACK\RMIT-HACK-26`).
 >
 > This is a requested reference document, not an automatically loaded `AGENTS.md`, a new global rule, or authorization to execute every suggested action. It records competition facts, observed state, proposed approaches, and unresolved decisions separately.
 
@@ -978,3 +978,115 @@ Local numerical evidence comes from the actual CSV files and tool checks describ
 ### Final handoff status
 
 The competition briefing, local readiness inspection, notebook-connection explanation, and proposed strategy are documented. Training setup, model implementation, live Kaggle connection, model results, and submissions remain outstanding. This Markdown file is a detailed context handoff, not evidence that those later stages have been completed.
+
+---
+
+## 26. Event-Day Progress and Updated Execution Plan (22 Oct 2026, 10:07 UTC+7)
+
+### 26.1 Confirmed Team & Repository Identity
+
+| Item | Confirmed Decision |
+|---|---|
+| **Team Identity** | University: `UTS` · Campus: `SGS` (Saigon South) · Team: `InnoLab` |
+| **Final C1 Notebook Name** | **`UTS_SGS_InnoLab_C1`** |
+| **Git Repository** | `D:\Coding\Prj\RMITHACK\RMIT-HACK-26` (remote: `https://github.com/khanhtuongnakitomo/RMIT-HACK-26.git` — **Warning:** currently public; keep private during competition before pushing or push only after confirming rules compliance) |
+| **Competition CSV Location** | Kept outside the Git repo at `D:\Coding\Prj\RMITHACK\{train,test,sample_submission}.csv` (excluded via `.gitignore` to respect CC BY-NC-SA 4.0 and Kaggle redistribution rules) |
+
+### 26.2 Current Repository Layout
+
+```text
+D:\Coding\Prj\RMITHACK\RMIT-HACK-26\
+├── README.md                              # Quickstart and repo map
+├── .gitignore                             # Excludes CSVs, checkpoints, secrets
+├── data\
+│   └── folds.csv                          # Shared 5-fold stratified split (id, fold)
+├── docs\
+│   ├── agent.md                           # This master briefing and handoff document
+│   └── dataset_findings_and_approach.md   # Detailed EDA report & baseline analysis
+├── experiments\
+│   └── EXPERIMENT_LOG.md                  # Shared experiment & 6-submission ledger
+├── plans\
+│   ├── SUB1_wolf_defender.md              # Self-contained Kaggle spec for Submission #1
+│   └── SUB2_xlmr_large.md                 # Self-contained Kaggle spec for Submission #2
+└── scripts\
+    ├── make_folds.py                      # Generates data/folds.csv and verifies SHA-256
+    ├── validate_submission.py             # Structural validator for 6,000-row submission.csv
+    └── eda\
+        ├── inspect1.py                    # Distribution, ID, length, and surface-feature checks
+        └── inspect2.py                    # 5-fold TF-IDF + LogisticRegression baseline & NN check
+```
+
+### 26.3 Deep-Dive Dataset Audit & Reference Baseline Findings (Verified Locally)
+
+Executed via [`scripts/eda/inspect1.py`](../scripts/eda/inspect1.py) and [`scripts/eda/inspect2.py`](../scripts/eda/inspect2.py) in an ephemeral `uv` environment:
+
+1. **Encoding is Clean UTF-8:** `train.csv` and `test.csv` contain valid UTF-8 sequences (`0` `U+FFFD` replacement characters). Garbled characters in Windows PowerShell were terminal codepage artifacts only. Always read with `encoding="utf-8"`.
+2. **Train and Test Share Identical Distributions:**
+   - Language proportions in `test.csv` are identical to `train.csv`: `pt` 45% (2,700), `fr` 25% (1,500), `it` 20% (1,200), `en` 10% (600).
+   - Character length percentiles match closely (`train` median 294, p95 1,543 vs. `test` median 283, p95 1,519).
+   - IDs (`t000000`–`t019999`) are interleaved across train and test with flat class proportions across ID bins. `sample_submission.csv` IDs are in the exact same row order as `test.csv`.
+3. **Near-Duplicate & Leakage Check:**
+   - `0` exact normalized text overlaps between train and test; `0` duplicates within test.
+   - Using character n-gram TF-IDF cosine similarity, 211 train–train pairs have similarity > 0.9 with **0 label conflicts**; 88 test rows have a train neighbor > 0.9. Standard stratified K-fold is trustworthy without complex cluster grouping.
+4. **Structural & Source Characteristics:**
+   - All newlines (`\n`) were stripped in both train and test.
+   - Some prompts contain untranslated or code-mixed text (e.g., Vietnamese, Indonesian, German fragments) regardless of the `language` tag.
+   - Surface signals: bracketed uppercase placeholders like `[TARGETLANGUAGE]` or `[PROMPT]` appear in **13.2% of `BENIGN`** rows vs. **0.1%** of attack rows. Trailing colons (`:`) appear in **8.5% of `PROMPT_INJECTION`** rows vs. **0.2–0.3%** of other classes. **Do not lowercase or strip punctuation.**
+5. **5-Fold TF-IDF + Logistic Regression Baseline (Signal Floor to Beat):**
+   - `char_wb(2,5)` + `word(1,2)` TF-IDF on the 5-fold stratified split (`seed=42`):
+     - Unweighted LR: **0.9148 Macro F1** (`BENIGN` 0.950, `JAILBREAK` 0.920, `PROMPT_INJECTION` 0.873 with 0.782 recall).
+     - `class_weight="balanced"` LR: **0.9280 Macro F1** (`BENIGN` 0.951, `JAILBREAK` 0.919, `PROMPT_INJECTION` 0.914 with 0.871 recall).
+   - **Primary error mode (~700 errors):** `BENIGN` ↔ `JAILBREAK` confusions caused by *WildJailbreak*-style adversarial-benign prompts that use complex roleplay framing ("Imagine a world where...") for benign requests. Requires deep semantic understanding from a fine-tuned transformer.
+   - **Secondary error mode (~125 errors):** Missed or noisy `PROMPT_INJECTION` rows.
+   - **Submission Gate:** Any neural model must achieve **Validation Macro F1 ≥ 0.930** on Fold 0 before we spend one of our 6 Kaggle submission attempts on it.
+
+### 26.4 Multilingual Audit of the 10 Approved Models
+
+Web verification of model cards and architectures established:
+
+- **Top Multilingual Contenders Selected for Phase 1 ("Testing the Waters"):**
+  1. **`patronus-studio/wolf-defender-prompt-injection` (Sub 1):** Built on **`jhu-clsp/mmBERT-base`** (ModernBERT architecture, ~307M params, 1,800+ languages, up to 2,048–8,192 context length) and pre-finetuned by Patronus AI for multilingual prompt-injection detection. Because its original head is binary (2 classes), load with `num_labels=3, ignore_mismatched_sizes=True`. Fallback if any loading issue occurs on Kaggle: **`jhu-clsp/mmBERT-base`**.
+  2. **`FacebookAI/xlm-roberta-large` (Sub 2):** 560M-parameter bidirectional encoder covering 100 languages (`max_len=512`). Tests maximum encoder parameter capacity on subtle `BENIGN` vs. `JAILBREAK` semantics.
+  3. **`ibm-granite/granite-3.3-2b-instruct` (Sub 3 candidate):** 2.5B-parameter instruction/safety-aligned LLM natively supporting 12 languages including **Portuguese, French, Italian, and English**. Best used via `AutoModelForSequenceClassification` (`num_labels=3`) with **LoRA (`r=16`, `modules_to_save=["score"]`)** rather than slow causal text generation.
+- **Models Deprioritized / Avoided:**
+  - **`protectai/deberta-v3-base-prompt-injection-v2`:** Built on English `microsoft/deberta-v3-base` (not `mdeberta`). Avoid because 90% of the dataset is `pt`/`fr`/`it`.
+  - **`mistralai/Mistral-7B-Instruct-v0.3`:** Too large/slow (7.2B) for iterative CV within the 18:00 deadline compared to Granite-3.3-2B.
+  - **`distilbert/distilbert-base-multilingual-cased`:** Superseded in both speed and accuracy by `mmBERT`.
+
+### 26.5 Six-Submission Master Strategy & Public Leaderboard Math
+
+- **Public LB Sensitivity Math:** The 30% Public LB has $\approx 1,800$ rows, containing only $\approx 126$ `PROMPT_INJECTION` rows ($7\%$). Flipping a single `PROMPT_INJECTION` prediction moves `F1_injection` by $\approx 0.008$ and overall **Macro F1 by $\approx 0.0027$**. Treat Public LB differences $< 0.003$ as noise; rely on Local CV + consistent Public LB gains ($+0.008+$).
+- **Phase 1 — "Testing the Waters" (Submissions 1–3, all on Fold 0 of `data/folds.csv`, plain `argmax`, no adaptive K / no threshold tuning):**
+  - **Sub 1:** `patronus-studio/wolf-defender-prompt-injection` (or `jhu-clsp/mmBERT-base` fallback), Fold 0, `max_len=1024` (or `512`), spec in [`plans/SUB1_wolf_defender.md`](../plans/SUB1_wolf_defender.md).
+  - **Sub 2:** `FacebookAI/xlm-roberta-large`, Fold 0, `max_len=512`, spec in [`plans/SUB2_xlmr_large.md`](../plans/SUB2_xlmr_large.md).
+  - **Sub 3:** `ibm-granite/granite-3.3-2b-instruct` (LoRA `SEQ_CLS`, Fold 0) — or early multi-fold if Sub 1/Sub 2 already establishes a decisive winner.
+- **Phase 2 — "Heavy Hitters" (Submissions 4–6):**
+  - **Sub 4:** **5-Fold Ensemble** of the winning single backbone from Phase 1 (train Folds 1–4 to join Fold 0; average softmax probabilities across all 5 folds).
+  - **Sub 5:** **Post-Processing Threshold / Class-Prior Tuning** on the 14,000 Out-Of-Fold probability predictions from Sub 4 to optimize Macro F1 on the 7% `PROMPT_INJECTION` class (0 extra GPU time).
+  - **Sub 6:** Final reserve (e.g., 5-Fold blend with a full-data seed refit, or 5-Fold threshold-tuned runner-up backbone to hedge Private LB selection).
+
+### 26.6 Shared Experiment Contract (Locked for Sub 1 and Sub 2)
+
+To guarantee an apples-to-apples comparison between co-workers running on separate Kaggle accounts:
+
+- **Fixed Split File:** [`data/folds.csv`](../data/folds.csv) generated by `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on `language + "__" + label`.
+- **Fold 0 Validation Fingerprint:** `2,800` rows; `sha256(",".join(sorted(fold0_ids)))` = `0d043c7efa1612b707d4a52e4b73a0aa311ee37fb3f9cadf213ec47269a57fc4`. Both notebooks assert this exact hash before training.
+- **Label Order:** `LABELS = ["BENIGN", "JAILBREAK", "PROMPT_INJECTION"]` (`0, 1, 2`).
+- **Input Text:** Raw `text` column unmodified; head+tail truncation keeping the first 75% and last 25% of tokens when exceeding `max_len`.
+- **Loss Function:** Cross-entropy with mild square-root inverse-frequency class weights computed on the training folds: `w ≈ [1.00, 1.41, 2.98]`.
+- **No Adaptive K / No Threshold Tuning in Sub 1 & Sub 2:** Only Fold 0 is trained, and test labels use raw `argmax` so backbone quality is isolated cleanly.
+- **Required Saved Artifacts per Run:** `valid_probs.csv` (2,800 rows), `test_probs.csv` (6,000 rows), `submission.csv` (validated via [`scripts/validate_submission.py`](../scripts/validate_submission.py)), `metrics.json`, and `best_model/`.
+
+### 26.7 Updated Preparation & Execution Checklist
+
+| Activity | Status as of 10:07 UTC+7 |
+|---|---|
+| Read official public competition materials & create initial `agent.md` | **Completed** |
+| Deep-dive EDA on `train.csv` / `test.csv` & verify UTF-8 / leakage / lengths | **Completed** (`docs/dataset_findings_and_approach.md`) |
+| Run 5-fold TF-IDF + LogisticRegression baseline (`0.9280` Macro F1) | **Completed** (`scripts/eda/inspect2.py`) |
+| Audit multilingual & architectural specs of all 10 approved models | **Completed** |
+| Generate locked 5-fold split (`data/folds.csv`) & submission validator script | **Completed** (`scripts/make_folds.py`, `scripts/validate_submission.py`) |
+| Write self-contained Kaggle handoff specs for Sub 1 & Sub 2 | **Completed** (`plans/SUB1_wolf_defender.md`, `plans/SUB2_xlmr_large.md`) |
+| Organize files into `RMIT-HACK-26` Git repository & commit locally | **Completed** |
+| Make GitHub repository private & push commits to remote | **Pending user action / confirmation** |
+| Execute Sub 1 (`wolf-defender`) & Sub 2 (`xlm-roberta-large`) on Kaggle GPUs | **Ready to launch now** |
