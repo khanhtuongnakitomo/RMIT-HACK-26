@@ -1,0 +1,27 @@
+# Competition data — do not commit (licence / competition rules)
+*.zip
+train.csv
+test.csv
+sample_submission.csv
+submission*.csv
+
+# Model artifacts and run outputs
+outputs/
+runs/
+checkpoints/
+best_model/
+*.safetensors
+*.bin
+*.pt
+*.onnx
+*.npy
+
+# Python / notebooks
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Secrets (Kaggle API key, Jupyter server URLs)
+kaggle.json
+.env
