@@ -12,6 +12,9 @@ Kaggle deadline: **22 Oct 2026, 18:00 UTC+7**. Final notebook name: **`UTS_SGS_I
 | [`docs/dataset_findings_and_approach.md`](docs/dataset_findings_and_approach.md) | Data audit, TF-IDF baseline (0.928 CV macro F1), model choice, overall plan |
 | [`plans/SUB1_wolf_defender.md`](plans/SUB1_wolf_defender.md) | Hand-off spec: Sub 1 — `wolf-defender-prompt-injection`, fold 0 |
 | [`plans/SUB2_xlmr_large.md`](plans/SUB2_xlmr_large.md) | Hand-off spec: Sub 2 — `xlm-roberta-large`, fold 0 |
+| [`plans/SUB3_granite_lora.md`](plans/SUB3_granite_lora.md) | Hand-off spec: Sub 3 — `granite-3.3-2b-instruct` LoRA, fold 0 |
+| [`plans/SUB4_wolf_adaptive_full.md`](plans/SUB4_wolf_adaptive_full.md) | Hand-off spec: Sub 4 — `wolf-defender` adaptive-K + 100% full-data single model (Kaggle T4 ×2) |
+| [`scripts/sub4_wolf_adaptive.py`](scripts/sub4_wolf_adaptive.py) | Self-contained PyTorch runner for Sub 4 (`fold`, `full`, `select`, `finalize`) |
 | [`experiments/EXPERIMENT_LOG.md`](experiments/EXPERIMENT_LOG.md) | Shared results table + submission ledger |
 | [`data/folds.csv`](data/folds.csv) | Fixed 5-fold split (`id,fold`), stratified on language × label, seed 42 |
 | [`scripts/make_folds.py`](scripts/make_folds.py) | Regenerates `folds.csv` and prints the fold-0 fingerprint |

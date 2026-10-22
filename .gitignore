@@ -25,3 +25,8 @@ __pycache__/
 # Secrets (Kaggle API key, Jupyter server URLs)
 kaggle.json
 .env
+
+# Machine-local notebook connections and bridge session credentials
+.jupyter-agent-bridge/
+.cursor/mcp.json
+.codex/config.toml

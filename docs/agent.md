@@ -2,7 +2,7 @@
 
 > Prepared for a four-person student team from the research, local checks, and discussions in this chat.
 >
-> **As of:** 22 October 2026 (Updated at 10:07 UTC+7 — see **[Section 26](#26-event-day-progress-and-updated-execution-plan-22-oct-2026-1007-utc7)** for the latest dataset audit, TF-IDF baseline, approved-model multilingual verification, 6-submission strategy, fixed 5-fold split, and Sub 1 / Sub 2 handoff specs). **Reference timezone:** Vietnam / Asia–Bangkok, UTC+7.
+> **As of:** 22 October 2026, 14:20 UTC+7. Scored attempts and the Granite fold-0 result are in **[Section 26.8](#268-scored-submissions-22-oct-2026-1420-utc7)**. Section 26 still holds the dataset audit, TF-IDF floor (0.9280), model shortlist, 6-attempt plan, and locked split. **Reference timezone:** Vietnam / Asia–Bangkok, UTC+7.
 >
 > **Workspace:** `D:\Coding\Prj\RMITHACK` (Git repository root: `D:\Coding\Prj\RMITHACK\RMIT-HACK-26`).
 >
@@ -162,7 +162,7 @@ The task is not specifically Vietnamese/Malay classification. An earlier broad t
 4. Export a valid `id,label` CSV.
 5. Submit to Kaggle and make the notebook accessible as instructed by the organizers. [S1, S3]
 
-No competition model training or submission has been performed in this chat.
+Three Kaggle attempts have since been scored. The live numbers are in [Section 26.8](#268-scored-submissions-22-oct-2026-1420-utc7). This section is the task contract, not the scoreboard.
 
 ## 7. Dataset contract and verified local audit
 
@@ -825,7 +825,7 @@ At finish:
 
 ### 20.3 Example CSV validator
 
-This checks structure, not prediction quality or rule compliance. Run against a real candidate after inference. It has not been run against a generated model submission because no model submission exists yet.
+This checks structure, not prediction quality or rule compliance. The same checks passed on 22 Oct 2026 for the Granite file `outputs/sub3_granite_f0/submission.csv`: 6,000 rows, columns `id,label`, unique ids equal to `test.csv`, labels only in the three allowed classes.
 
 ```python
 from pathlib import Path
@@ -977,7 +977,7 @@ Local numerical evidence comes from the actual CSV files and tool checks describ
 
 ### Final handoff status
 
-The competition briefing, local readiness inspection, notebook-connection explanation, and proposed strategy are documented. Training setup, model implementation, live Kaggle connection, model results, and submissions remain outstanding. This Markdown file is a detailed context handoff, not evidence that those later stages have been completed.
+The briefing, local audit, and six-attempt plan above are still the contract, with one strict rule clarification: **no ensembling (including multi-fold averaging) is permitted — every submission must come from a single model checkpoint**. Three attempts are used: Attempt 1 is `wolf-defender-prompt-injection` (**0.96557** public macro F1) and Attempt 3 is `granite-3.3-2b-instruct` LoRA fold 0 (**0.96808** public macro F1). Attempt 2's public score is not in this log. Details are in [Section 26.8](#268-scored-submissions-22-oct-2026-1420-utc7). Three attempts remain.
 
 ---
 
@@ -1006,11 +1006,15 @@ D:\Coding\Prj\RMITHACK\RMIT-HACK-26\
 ├── experiments\
 │   └── EXPERIMENT_LOG.md                  # Shared experiment & 6-submission ledger
 ├── plans\
-│   ├── SUB1_wolf_defender.md              # Self-contained Kaggle spec for Submission #1
-│   └── SUB2_xlmr_large.md                 # Self-contained Kaggle spec for Submission #2
+│   ├── SUB1_wolf_defender.md              # Self-contained spec for the wolf-defender run
+│   ├── SUB2_xlmr_large.md                 # Self-contained spec for the XLM-RoBERTa-large run
+│   ├── SUB3_granite_lora.md               # Granite-3.3-2B LoRA spec (Colab A100 fold-0 run)
+│   └── SELFVAL_offline_scoring.md         # Offline scoring notes
 └── scripts\
     ├── make_folds.py                      # Generates data/folds.csv and verifies SHA-256
     ├── validate_submission.py             # Structural validator for 6,000-row submission.csv
+    ├── sub3_prepare.py                    # Local copy of the Granite prepare cell
+    ├── sub3_train.py                      # Earlier train draft; the notebook cell is the run that executed
     └── eda\
         ├── inspect1.py                    # Distribution, ID, length, and surface-feature checks
         └── inspect2.py                    # 5-fold TF-IDF + LogisticRegression baseline & NN check
@@ -1089,4 +1093,34 @@ To guarantee an apples-to-apples comparison between co-workers running on separa
 | Write self-contained Kaggle handoff specs for Sub 1 & Sub 2 | **Completed** (`plans/SUB1_wolf_defender.md`, `plans/SUB2_xlmr_large.md`) |
 | Organize files into `RMIT-HACK-26` Git repository & commit locally | **Completed** |
 | Make GitHub repository private & push commits to remote | **Pending user action / confirmation** |
-| Execute Sub 1 (`wolf-defender`) & Sub 2 (`xlm-roberta-large`) on Kaggle GPUs | **Ready to launch now** |
+| Execute Sub 1 (`wolf-defender`) & Sub 2 (`xlm-roberta-large`) on Kaggle GPUs | **Sub 1 (`wolf-defender`) completed & submitted as Attempt 1 (`0.96557` Public LB).** Attempt 2's public score is not in this log. See 26.8. |
+| Granite-3.3-2B LoRA fold-0 on Colab A100, then upload | **Completed & submitted as Attempt 3.** Local fold-0 macro F1 `0.9589`. Public score is **`0.96808`**. See 26.8. |
+
+### 26.8 Scored submissions (22 Oct 2026, 14:29 UTC+7)
+
+Three of the six attempts have been submitted. **Important constraint confirmed by the team: Ensembling (even across folds of the same backbone) is NOT permitted — each submission must be produced by a single trained model.**
+
+| Attempt | Kaggle entry | Model | Submitter | About | Public macro F1 |
+|---|---|---|---|---|---:|
+| 1 | Notebook `UTS_SGS_InnoLab_C1` Version 4 | `patronus-studio/wolf-defender-prompt-injection` (fold 0) | Dang Thai | 13:38 | **0.96557** |
+| 2 | Not on the screenshot | | | | |
+| 3 | File `submission.csv` | `ibm-granite/granite-3.3-2b-instruct` LoRA r=16 (fold 0) | Tuong Nakitomo | 14:12 | **0.96808** |
+
+Best known public score is **0.96808** (`granite-3.3-2b-instruct` LoRA, fold 0), followed closely by **0.96557** (`wolf-defender-prompt-injection`, fold 0). The gap over attempt 1 is **+0.00251**. Section 26.5 treats a move below about 0.003 as noise, because one flipped `PROMPT_INJECTION` prediction on the public slice moves macro F1 by about 0.0027.
+
+**What each row is:**
+
+- **Attempt 1 (`0.96557`):** `patronus-studio/wolf-defender-prompt-injection` run inside the official Kaggle notebook `UTS_SGS_InnoLab_C1` (Version 4).
+- **Attempt 2:** Score not recorded in this log.
+- **Attempt 3 (`0.96808`):** `ibm-granite/granite-3.3-2b-instruct` + LoRA (`r=16`, `max_len=1024`, 2 epochs = 700 steps on folds 1–4) uploaded from `outputs/sub3_granite_f0/submission.csv`. Local fold-0 macro F1 on the reloaded checkpoint is **0.9589** (accuracy 0.9689; BENIGN 0.9765, JAILBREAK 0.9600, PROMPT_INJECTION 0.9403).
+
+**Granite run notes (critical for Sub 4/5/6):**
+1. Trained on Colab A100 (`ibm-granite/granite-3.3-2b-instruct`, LoRA r=16, max length 1024, 2 epochs, 700 steps, 23 minutes). `transformers` 5.20 has no `GraniteForSequenceClassification`, so the run used a last-token linear head (`GraniteClassifier`), not `AutoModelForSequenceClassification`.
+2. `Trainer`'s end-of-training reload of checkpoint 700 scored **0.3409** and wrote a bad CSV (`valid_probs.csv` and `test_probs.csv` on disk were also written before the manual reload!). Loading `checkpoint-700/model.safetensors` explicitly with `model.load_state_dict(sd, strict=False)` and running a non-shuffled `DataLoader` (`ordered_logits` in `workplace.ipynb` Cell 6) scored **0.9589** and overwrote `submission.csv` (which scored **0.96808** on Kaggle). **Always overwrite `valid_probs.csv` and `test_probs.csv` from `ordered_logits` after manual `load_state_dict`!**
+
+**Updated Phase 2 Plan (Attempts 4, 5, 6 — Strictly Single-Model, No Ensembles):**
+Because ensembling is prohibited, Phase 2 focuses on **single-model upgrades** before the 17:00 UTC+7 training cutoff (18:00 deadline):
+1. **Fix & Save Sub 3 Fold-0 Probabilities + Run Cross-Fitted Logit-Bias Calibration (`SELFVAL`):** Overwrite `valid_probs.csv` and `test_probs.csv` from the working `0.9589` Granite checkpoint (`ordered_logits`) and compute the cross-fitted class-bias vector `b = [0, b_JB, b_INJ]` on Fold 0 (`PROMPT_INJECTION` had precision `0.9526` vs. recall `0.9282`, so tuning the linear head bias boosts minority recall on the single model).
+2. **Submission #4 (Upgraded Single-Model Granite on Fold 0 — Verified by Fold-0 CV before upload):** Train a single `granite-3.3-2b-instruct` LoRA model for **3 epochs (1,050 steps) with Cosine LR (`1e-4`) and `weight_decay=0.01`** (in Sub 3, Fold-0 Macro F1 was still climbing steeply from `0.9452` at step 525 to `0.9599` at step 700 when training stopped) + calibrated class bias. Submit only if Fold-0 Macro F1 beats `0.9589`.
+3. **Submission #5 (Single-Model Full-Data Refit on 100% of `train.csv` = 14,000 rows):** Train **one single model** (Granite-3.3-2B LoRA, or Wolf-Defender) on **all 14,000 labelled rows** (giving the single model 25% more training data, including all **980 `PROMPT_INJECTION` rows** instead of only 785) for the verified optimal step count + calibrated head bias.
+4. **Submission #6 (Final Single-Model Reserve / Official Notebook Sync `UTS_SGS_InnoLab_C1`):** Ensure the highest-scoring single model (either the upgraded `wolf-defender-prompt-injection` or `granite-3.3-2b-instruct` LoRA adapter) runs cleanly inside the official Kaggle notebook `UTS_SGS_InnoLab_C1`.
